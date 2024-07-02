@@ -1,22 +1,18 @@
-import {
-  Alert,
-  Button,
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+import {Alert, Button, FlatList, StatusBar, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-import { ref, set, onValue } from "firebase/database";
+import { ref, set, onValue, update, remove } from "firebase/database";
 import { db } from "../config/Config";
+import Tarjeta from "../components/Tarjeta";
 
 export default function UsuarioScreen() {
-  const [cedula, setcedula] = useState("");
-  const [nombre, setnombre] = useState("");
-  const [correo, setcorreo] = useState("");
-  const [comentario, setcomentario] = useState("");
-  const [usuarios, setusuarios] = useState([]);
+  const [cedula, setCedula] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [comentario, setComentario] = useState("");
+
+  const [usuarios, setUsuarios] = useState([]);
+//---------------------------------GUARDAR-----------------------------------
 
   function guardarUsuario(
     cedula: string,
@@ -29,33 +25,62 @@ export default function UsuarioScreen() {
       email: correo,
       coment: comentario,
     });
-    Alert.alert("Mensaje", "dg");
+    Alert.alert("Mensaje", "Usuario guardado con éxito");
+    limpiarCampos();
   }
+//---------------------------------LIMPIAR-----------------------------------
 
-  setcedula("");
-  setnombre("");
-  setcorreo("");
-  setcomentario("");
+  function limpiarCampos() {
+    setCedula("");
+    setNombre("");
+    setCorreo("");
+    setComentario("");
+  }
 
   useEffect(() => {
     const starCountRef = ref(db, "usuarios/");
     onValue(starCountRef, (snapshot) => {
       const data = snapshot.val();
-      //console.log(data);
-
-      const datatemp: any = Object.keys(data).map((key) => ({
-        key,
-        ...data[key],
-      }));
-      console.log(datatemp);
-      setusuarios(datatemp);
+      const datatemp = data
+        ? Object.keys(data).map((key) => ({
+            key,
+            ...data[key],
+          }))
+        : [];
     });
-  }, [])
-type Usuarios={
-  name: string
+  }, []);
+  //---------------------------------LEER-----------------------------------
+function leer() {
+ useEffect(() => {
+   leer()
+ },[])
+
+
+  //---------------------------------EDITAR-----------------------------------
+  function editar(id: string) {
+    update(ref(db, "usuarios/" + id), {
+      name: nombre,
+      email: correo,
+      coment: comentario,
+    });
+  }
+function editar2(item:any){
+setCedula(item.key)
+setNombre(item.name)
+setCorreo(item.email)
+setComentario(item.coment)
 }
 
+  //---------------------------------ELIMINAR-----------------------------------
+  function eliminar(id: string) {
+    remove(ref(db, "usuarios/" + id));
+  }
 
+  type Usuario = {
+    name: string,
+    key: string
+    
+  };
 
   return (
     <View style={styles.container}>
@@ -63,45 +88,60 @@ type Usuarios={
       <TextInput
         placeholder="Ingrese Cedula"
         style={styles.txt}
-        onChangeText={(texto) => setcedula(texto)}
+        onChangeText={setCedula}
         value={cedula}
         keyboardType="numeric"
       />
       <TextInput
         placeholder="Ingrese Nombre"
         style={styles.txt}
-        onChangeText={(texto) => setnombre(texto)}
+        onChangeText={setNombre}
         value={nombre}
       />
       <TextInput
         placeholder="Ingrese Correo"
         style={styles.txt}
-        onChangeText={(texto) => setcorreo(texto)}
+        onChangeText={setCorreo}
         value={correo}
         keyboardType="email-address"
       />
       <TextInput
         placeholder="Ingrese Comentario"
         style={styles.txt}
-        onChangeText={(texto) => setcomentario(texto)}
+        onChangeText={setComentario}
         value={comentario}
       />
       <Button
-        title="guardar"
+        title="Guardar"
         onPress={() => guardarUsuario(cedula, nombre, correo, comentario)}
       />
       <FlatList
         data={usuarios}
-        renderItem={({ item }:{item:Usuarios}) => 
+        renderItem={({ item }: { item: Usuario }) => (
           <View>
-            <Text> {item.name}</Text>
+            <Tarjeta usuario={item} />
+            <View style={{ flexDirection: "row" }}>
+              <Button
+                title="Editar"
+                color="green"
+                onPress={() => editar2(item.key)}
+              />
+              <Button
+                title="Eliminar"
+                color="red"
+                onPress={() => eliminar(item.key)}
+              />
+            </View>
           </View>
-        }
+        )}
       />
+
+      <StatusBar />
     </View>
   );
 }
 
+};
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -115,5 +155,6 @@ const styles = StyleSheet.create({
     width: "80%",
     margin: 2,
     fontSize: 20,
+    padding: 10,
   },
-});
+})
